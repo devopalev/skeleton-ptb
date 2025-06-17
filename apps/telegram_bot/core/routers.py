@@ -28,7 +28,7 @@ class ConversationRouter(_BaseRouter):
     def __init__(
         self,
         name: typing.Optional[str] = None,
-        **conversation_options: dict[str, Any],
+        **conversation_options: Any,
     ):
         super().__init__()
         self.name = name
