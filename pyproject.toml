@@ -11,8 +11,42 @@ python-telegram-bot = {extras = ["job-queue"], version = "^20.7"}
 psycopg2-binary = "^2.9.9"
 asyncpg = "^0.29.0"
 yoyo-migrations = "^8.2.0"
-python-dotenv = "^1.0.0"
+ujson = "^5.10.0"
+environs = "^14.2.0"
+python-json-logger = "^3.3.0"
+typer = "^0.16.0"
+supertools = "^1.0.1"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.2.1"
+mypy = "^1.8.0"
+types-pytz = "^2023.3.0.0"
+types-ujson = "^4.2.1"
+types-python-dateutil = "^2.9.0.20240316"
+pre-commit = "^3.6.0"
+
+
+[tool.mypy]
+warn_return_any = true
+warn_unused_configs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+
+check_untyped_defs = true
+ignore_missing_imports = true
+
+disallow_any_generics = true
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
+implicit_reexport = true
+strict_equality = true
+extra_checks = true
+exclude = [
+    "tests",
+]
