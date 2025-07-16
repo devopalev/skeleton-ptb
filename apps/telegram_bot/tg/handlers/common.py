@@ -5,7 +5,7 @@ from telegram.ext import ConversationHandler, CallbackQueryHandler
 
 from apps.telegram_bot.core.custom_handlers import CommandHandlerCustom
 from apps.telegram_bot.core.routers import Router
-from apps.telegram_bot.tg.elements import messages, buttons
+from apps.telegram_bot.tg.elements import common
 from apps.telegram_bot.core.context import CustomContext
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ async def handle_help(update: Update, context: CustomContext) -> None:
     """Send a message when the command /help is issued."""
     if not update.message:
         raise ValueError()
-    msg = messages.HelpMessage()
+    msg = common.HelpMessage()
     await update.message.reply_text(msg.text, msg.parse_mode)
 
 
@@ -50,7 +50,7 @@ async def timeout_handle(update: Update, context: CustomContext) -> int:
 
 @common_router.register_handler(
     class_handler=CallbackQueryHandler,
-    pattern=str(buttons.IgnoreButton.BASE_CALLBACK.callback_rejex),
+    pattern=common.IGNORE.rejex,
 )
 async def ignore_callback(update: Update, context: CustomContext) -> None:
     if update.callback_query:
@@ -65,13 +65,13 @@ async def ignore_callback(update: Update, context: CustomContext) -> None:
 )
 async def handle_start(update: Update, context: CustomContext) -> None:
     if update.effective_message and update.effective_user:
-        msg = messages.StartMessage(update.effective_user.full_name)
+        msg = common.StartMessage(update.effective_user.full_name)
         await update.effective_message.reply_text(msg.text)
 
 
 @common_router.register_handler(
     class_handler=CallbackQueryHandler,
-    pattern=str(buttons.CloseMenuButton.BASE_CALLBACK.callback_rejex),
+    pattern=common.MENU_CLOSE.rejex,
 )
 async def menu_close(update: Update, context: CustomContext) -> None:
     if update.callback_query and update.callback_query.message:
@@ -97,7 +97,7 @@ async def unknown_callback(update: Update, context: CustomContext) -> int:
 
     try:
         await message.edit_reply_markup()
-        msg = messages.BadCallbackMessage()
+        msg = common.BadCallbackMessage()
         await message.reply_text(msg.text, parse_mode=msg.parse_mode)
     except Exception as e:
         logging.error(f'Error in unknown_callback: {e}')

@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import signal
 from typing import Any, Optional
 
 from telegram import Update
@@ -49,13 +50,26 @@ async def run_telegram_app(
 ) -> None:
     app = app or await create_telegram_app()
 
+    stop_event = asyncio.Event()
+
+    loop = asyncio.get_running_loop()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        loop.add_signal_handler(sig, stop_event.set)
+
     if not app.updater:
         raise ValueError('Updater must be set')
 
-    async with app:  # Calls `initialize` and `shutdown`
+    async with app:
         await app.start()
         await app.updater.start_polling(allowed_updates=Update.ALL_TYPES)
-        await asyncio.Future()  # endless waiting
+
+        try:
+            await stop_event.wait()
+        except asyncio.CancelledError:
+            pass
+        finally:
+            await app.updater.stop()
+            await app.stop()
 
 
 async def run_telegram_app_daemon() -> (

@@ -1,3 +1,5 @@
+import logging
+
 import asyncpg
 import ujson
 from asyncpg import Connection, Pool
@@ -30,6 +32,14 @@ async def setup_db() -> None:
         connection_class=Connection,
         statement_cache_size=0,
     )
+    logging.info('DB initialized')
+
+
+async def shutdown_db() -> None:
+    for pool in _POOL_REGISTRY.values():
+        await pool.close()
+
+    logging.info('DB shutdown')
 
 
 async def connection() -> Pool:

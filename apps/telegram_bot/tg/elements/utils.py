@@ -1,52 +1,69 @@
 import typing
-from abc import ABC, abstractmethod
 
 
-class BaseCallbackConstructor(ABC):
-    @classmethod
-    @abstractmethod
-    def from_callback_data(cls, callback_data: str) -> 'BaseCallbackConstructor': ...
+class CallbackManager:
+    _symbol_slitter = '?'
+    _symbol_elements = '&'
+    _symbol_values = '='
+    _symbol_list = ','
+    _key_values = 'values[]'
 
-    @property
-    @abstractmethod
-    def callback_data(self) -> str: ...
-
-    def __str__(self) -> str:
-        return self.callback_data
-
-
-class CallbackBuilder(BaseCallbackConstructor):
-    splitter = ':'
-
-    def __init__(self, *callback: str) -> None:
-        self._elements = callback
+    def __init__(
+        self,
+        path: str,
+        *args: str,
+        **kwargs: str,
+    ):
+        self.path = path
+        self.args: list[str] = list(args) or []
+        self.kwargs: dict[str, str] = kwargs or {}
 
     def __str__(self) -> str:
-        return self.callback_data
+        result = f'{self.path}'
+        arguments = ''
 
-    def __eq__(self, other: typing.Any) -> bool:
-        return isinstance(other, CallbackBuilder) and self.callback_data == other.callback_data
+        if self.args:
+            arguments += self._key_values + self._symbol_values + self._symbol_list.join(map(str, self.args))
 
-    def add_callback(self, callback: str) -> 'CallbackBuilder':
-        return self.__class__(str(self), callback)
+        if self.kwargs:
+            arguments += self._symbol_elements.join(map(lambda x: self._symbol_values.join(x), self.kwargs.items()))
 
-    def issubset(self, other: 'CallbackBuilder') -> bool:
-        if not isinstance(other, CallbackBuilder):
-            raise TypeError('Unknown type')
-        return set(self._elements).issubset(set(other._elements))
+        if arguments:
+            result += self._symbol_slitter + arguments
 
-    @property
-    def callback_data(self) -> str:
-        return self.splitter.join(self._elements)
+        if (size := len(result.encode('utf-8'))) > 64:
+            raise ValueError(f'The maximum size has been exceeded, got {size}, expected 64 bytes: {result}')
 
-    @property
-    def callback_rejex(self) -> str:
-        return '^' + self.callback_data + '$'
+        return result
 
     @classmethod
-    def from_callback_data(cls, callback_data: str) -> 'CallbackBuilder':
-        return cls(*callback_data.split(cls.splitter))
+    def deserialize(cls, data: str) -> 'CallbackManager':
+        values, kwargs = [], {}
+        if cls._symbol_slitter in data:
+            path, parameters = data.split(cls._symbol_slitter)
+        else:
+            path, parameters = data, None
+
+        if parameters:
+            kwargs.update(dict(map(lambda x: x.split(cls._symbol_values), parameters.split(cls._symbol_elements))))
+
+            if cls._key_values in kwargs:
+                values.extend(kwargs.pop(cls._key_values).split(cls._symbol_list))
+
+        return cls(path, *values, **kwargs)
+
+    def add(self, *args: str, **kwargs: str) -> typing.Self:
+        kwargs.update(self.kwargs)
+        return self.__class__(self.path, *(list(args) + self.args), **kwargs)
 
     @property
-    def last_element(self) -> str:
-        return self._elements[-1]
+    def last_value(self) -> typing.Optional[str]:
+        if self.args:
+            return self.args[-1]
+        if self.kwargs:
+            return tuple(self.kwargs.values())[-1]
+        return None
+
+    @property
+    def rejex(self) -> str:
+        return f'^{self}$'

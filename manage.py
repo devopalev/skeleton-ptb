@@ -3,7 +3,7 @@ import asyncio
 import typer
 
 import settings
-from apps.common.db import apply_migrations, setup_db
+from apps.common.db import apply_migrations, setup_db, shutdown_db
 from apps.telegram_bot.app import run_telegram_app, create_telegram_app
 from apps.common.logs import setup_logs
 
@@ -19,6 +19,8 @@ async def core() -> None:
 
     tg_app = await create_telegram_app()
     await run_telegram_app(app=tg_app)
+
+    await shutdown_db()
 
 
 @app.command()
